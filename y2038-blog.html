@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The 2038 Problem — The Clock Is Ticking</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
+<header>
+  <div class="header-bg"></div>
+  <div class="clock-ring"></div>
+  <div class="clock-ring"></div>
+  <div class="clock-ring"></div>
+  <div class="clock-ring"></div>
+
+  <div class="header-ticker">⏰ T-minus: <span id="countdown">calculating…</span></div>
+
+  <h1>
+    The <span class="highlight">Next</span> Digital Crisis<br>
+    <span class="year">2038</span>
+  </h1>
+  <p class="header-sub">
+    On January 19, 2038 at 03:14:07 UTC, billions of Unix-based systems will overflow their signed 32-bit time counter — and the world may not be ready.
+  </p>
+  <div class="scroll-cue">scroll</div>
+</header>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">Y2K38</a>
+    <ul class="nav-links">
+      <li><a href="#background">Background</a></li>
+      <li><a href="#how-it-breaks">How It Breaks</a></li>
+      <li><a href="#affected">Affected Systems</a></li>
+      <li><a href="#hardware">Hardware</a></li>
+      <li><a href="#libraries">Libraries</a></li>
+      <li><a href="#games">Games</a></li>
+      <li><a href="#windows">Windows</a></li>
+      <li><a href="#code-fix">Code Fixes</a></li>
+      <li><a href="#deployment">Deployment</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ============================================================
+     MAIN CONTENT
+     ============================================================ -->
+<main>
+
+  <!-- ── SECTION 1: BACKGROUND ── -->
+  <section id="background">
+    <div class="section-label">01 — Background</div>
+    <h2>Where It All Began:<br>The Unix Epoch</h2>
+
+    <p>
+      In the early days of computing, engineers at Bell Labs created Unix — and with it, a way to measure time. Instead of storing a calendar date, they represented every moment as a single integer: the number of seconds elapsed since <strong>January 1, 1970, 00:00:00 UTC</strong>. This starting point became known as the <strong>Unix Epoch</strong>.
+    </p>
+    <p>
+      The choice was elegant and practical. An integer is fast to store, compare, and transmit. Time arithmetic (add a day? add 86,400 seconds) becomes trivial. A single 32-bit signed integer can represent any second across a range of roughly 136 years — which in 1970 seemed like more than enough.
+    </p>
+
+    <div class="pull-quote">
+      <p>They weren't wrong to use 32 bits — they were right for their time. The problem is that their time is almost up.</p>
+    </div>
+
+    <!-- Timeline -->
+    <h3>A History of Time (in Bits)</h3>
+    <div class="diagram-wrap reveal">
+      <div class="diagram-title">📅 Unix Time — Key Milestones</div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="tl-year">1970-01-01 00:00:00 UTC</div>
+          <div class="tl-text">Unix Epoch begins. <code style="font-size:0.82rem; color:var(--orange); background:rgba(232,87,10,0.1); padding:0.1em 0.4em; border-radius:3px;">time_t = 0</code> — the clock starts ticking.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-year">1969 — First POSIX Spec</div>
+          <div class="tl-text">POSIX standardizes <code style="font-size:0.82rem; color:var(--orange); background:rgba(232,87,10,0.1); padding:0.1em 0.4em; border-radius:3px;">time_t</code> as a signed integer type. Platform size was left implementation-defined.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-year">1999-2000 — Y2K</div>
+          <div class="tl-text">The world scrambles to fix 2-digit year bugs in COBOL and legacy code. A preview of what could happen in 2038 — at far larger scale.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-year">2001 — First 2038 Warnings</div>
+          <div class="tl-text">Researchers begin publishing papers about the 32-bit Unix time overflow. Most industry leaders dismiss it as too distant to matter.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-year">2006 — Linux 64-bit Kernel</div>
+          <div class="tl-text">64-bit Linux kernels internally use 64-bit time. But userspace ABIs, filesystems, and many embedded platforms remain 32-bit.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-year">2020 — Linux 5.6 Milestone</div>
+          <div class="tl-text">Linux kernel 5.6 becomes the first to fully support 32-bit systems beyond 2038 — a major milestone, but still not universally deployed.</div>
+        </div>
+        <div class="timeline-item danger">
+          <div class="tl-year">2038-01-19 03:14:07 UTC — ⚠ OVERFLOW</div>
+          <div class="tl-text">Signed 32-bit integer wraps to its most negative value: −2,147,483,648. All systems still running legacy 32-bit <code style="font-size:0.82rem; color:var(--red-vivid);">time_t</code> believe it is December 13, 1901.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-strip reveal">
+      <div class="stat-cell"><span class="num">2,147,483,647</span><span class="label-s">Max 32-bit signed value</span></div>
+      <div class="stat-cell"><span class="num">03:14:07</span><span class="label-s">UTC time of overflow</span></div>
+      <div class="stat-cell"><span class="num">~68 yrs</span><span class="label-s">half-life of 32-bit epoch</span></div>
+      <div class="stat-cell"><span class="num">292B yrs</span><span class="label-s">Range of 64-bit time_t</span></div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 2: HOW IT BREAKS ── -->
+  <section id="how-it-breaks">
+    <div class="section-label">02 — The Mechanics</div>
+    <h2>Why Legacy Code<br>Will Break in 2038</h2>
+
+    <p>
+      The root cause is binary arithmetic. A signed 32-bit integer uses 1 bit for the sign and 31 bits for magnitude. The maximum positive value is <strong>2,147,483,647</strong>. When you add 1 to this number in a 32-bit register, the result overflows — the carry bit flips the sign bit, producing <strong>−2,147,483,648</strong>.
+    </p>
+
+    <!-- Bit overflow diagram -->
+    <div class="diagram-wrap reveal">
+      <div class="diagram-title">🔢 32-bit Integer Overflow — Sign Bit Flip</div>
+      <div style="display:flex; flex-direction:column; gap:1.5rem;">
+
+        <div>
+          <div class="bit-bar-label">MAX VALUE: 2,147,483,647 (0x7FFFFFFF) — January 19 2038 03:14:07</div>
+          <div class="bit-bar-vis">
+            <div class="bit sign0">0</div>
+            <div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div>
+            <div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div>
+            <div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div>
+            <div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div>
+            <div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div>
+            <div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div>
+            <div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div>
+            <div class="bit one">1</div><div class="bit one">1</div><div class="bit one">1</div>
+          </div>
+          <div class="bit-caption">Sign bit = 0 (positive). All 31 value bits = 1.</div>
+        </div>
+
+        <div style="text-align:center; font-size:1.5rem; color:var(--orange);">+ 1 second →</div>
+
+        <div>
+          <div class="bit-bar-label">OVERFLOW: −2,147,483,648 (0x80000000) — wraps to Dec 13, 1901!</div>
+          <div class="bit-bar-vis">
+            <div class="bit sign">1</div>
+            <div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div>
+            <div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div>
+            <div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div>
+            <div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div>
+            <div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div>
+            <div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div>
+            <div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div>
+            <div class="bit zero">0</div><div class="bit zero">0</div><div class="bit zero">0</div>
+          </div>
+          <div class="bit-caption" style="color:var(--red-vivid);">Sign bit flips to 1 (negative). System thinks it's 1901!</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Pipeline: how a time call flows and breaks -->
+    <h3>The Failure Pipeline</h3>
+    <p>Here is how a time-sensitive operation flows through a system — and where 32-bit overflow injects an incorrect negative timestamp:</p>
+
+    <div class="diagram-wrap reveal">
+      <div class="diagram-title">⚙️ Time Call Failure Pipeline (32-bit system)</div>
+      <div style="display:flex; flex-direction:column; gap:0.4rem; min-width:500px;">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <div class="pipe-block cream" style="min-width:140px;">Application<br><span style="font-size:0.65rem; color:var(--mid-text);">calls time()</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-block orange" style="min-width:140px;">C stdlib<br><span style="font-size:0.65rem;">returns time_t</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-block amber" style="min-width:140px;">Kernel<br><span style="font-size:0.65rem;">sys_time()</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-block red" style="min-width:160px;">32-bit counter<br><span style="font-size:0.65rem;">OVERFLOWS → NEGATIVE</span></div>
+        </div>
+        <div class="pipe-arrow" style="text-align:left; padding-left:3rem; font-size:1.5rem; line-height:1;">↓</div>
+        <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+          <div class="pipe-block red" style="flex:1; min-width:150px;">Date = Dec 13, 1901<br><span style="font-size:0.65rem;">wrong by 136 years</span></div>
+          <div class="pipe-block red" style="flex:1; min-width:150px;">TLS Certs INVALID<br><span style="font-size:0.65rem;">before issue date</span></div>
+          <div class="pipe-block red" style="flex:1; min-width:150px;">DB Records CORRUPT<br><span style="font-size:0.65rem;">wrong timestamps</span></div>
+          <div class="pipe-block red" style="flex:1; min-width:150px;">Cron Jobs FAIL<br><span style="font-size:0.65rem;">negative intervals</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 32 vs 64 bit comparison -->
+    <h3>32-bit vs 64-bit: The Critical Difference</h3>
+    <div class="diagram-wrap reveal">
+      <div class="diagram-title">📊 32-bit vs 64-bit time_t Comparison</div>
+      <div class="split-diagram">
+        <div class="split-col">
+          <div class="split-header bad">32-bit time_t ❌</div>
+          <div class="split-row bad"><span class="label">Type size</span>4 bytes (32 bits)</div>
+          <div class="split-row bad"><span class="label">Max value</span>2,147,483,647</div>
+          <div class="split-row bad"><span class="label">Max date</span>Jan 19, 2038 03:14:07 UTC</div>
+          <div class="split-row bad"><span class="label">Range</span>~136 years total</div>
+          <div class="split-row bad"><span class="label">Overflow</span>Wraps to −2,147,483,648</div>
+          <div class="split-row bad"><span class="label">Result</span>System thinks it's 1901</div>
+          <div class="split-row bad"><span class="label">Found in</span>Legacy C, embedded MCUs, old Linux ABIs</div>
+        </div>
+        <div class="split-divider">VS</div>
+        <div class="split-col">
+          <div class="split-header good">64-bit time_t ✅</div>
+          <div class="split-row good"><span class="label">Type size</span>8 bytes (64 bits)</div>
+          <div class="split-row good"><span class="label">Max value</span>9,223,372,036,854,775,807</div>
+          <div class="split-row good"><span class="label">Max date</span>Year 292,277,026,596 AD</div>
+          <div class="split-row good"><span class="label">Range</span>~292 billion years</div>
+          <div class="split-row good"><span class="label">Overflow</span>Not for ~292 billion years</div>
+          <div class="split-row good"><span class="label">Result</span>Correct timestamps indefinitely</div>
+          <div class="split-row good"><span class="label">Found in</span>Modern 64-bit OS, updated C runtimes</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <span class="callout-icon">💣</span>
+      <div class="callout-body">
+        <strong>Critical: It's not just 2038-01-19</strong>
+        <p>Many systems already fail when computing timestamps beyond 2038 — even today. Anything that schedules events, computes expiry dates, or validates certificates beyond Jan 2038 may already be using the "wrong" past date.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 3: AFFECTED SYSTEMS ── -->
+  <section id="affected">
+    <div class="section-label">03 — What's at Risk</div>
+    <h2>Hardware &amp; Software<br>Under Threat</h2>
+
+    <p>
+      The Y2K38 problem is broader than Y2K was. While Y2K was largely a database and display issue, Y2K38 hits at the <strong>kernel and hardware RTC level</strong> — meaning entire operating systems can malfunction, not just applications.
+    </p>
+
+    <!-- Categories of affected systems -->
+    <div class="card-grid reveal">
+      <div class="card">
+        <span class="card-icon">🖥️</span>
+        <h4>32-bit Operating Systems</h4>
+        <p>Any 32-bit Linux, BSD, or RTOS with a <code style="font-size:0.78rem;">time_t</code> of 4 bytes. Includes legacy industrial control systems running 32-bit kernels never updated.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">📡</span>
+        <h4>Embedded &amp; IoT Devices</h4>
+        <p>Routers, modems, industrial sensors, medical devices, smart meters, and automotive ECUs running 32-bit MCUs (ARM Cortex-M, MIPS, older AVR-32). Many have no update path.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🗄️</span>
+        <h4>Databases &amp; Filesystems</h4>
+        <p>MySQL, PostgreSQL, and SQLite TIMESTAMP columns stored as 32-bit integers. Ext3 filesystem uses 32-bit timestamps. Files created after 2038 may show corrupt modification times.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🔐</span>
+        <h4>Security Infrastructure</h4>
+        <p>TLS/SSL certificates, Kerberos tokens, and DNSSEC signatures all use Unix timestamps for validity windows. A wrong clock = expired certs = broken HTTPS across the internet.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">💳</span>
+        <h4>Financial Systems</h4>
+        <p>Transaction timestamps, settlement windows, derivative expiry dates, and SWIFT messages all rely on accurate time. Legacy COBOL and C banking software is highly exposed.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">⚕️</span>
+        <h4>Medical &amp; Safety Systems</h4>
+        <p>Infusion pumps, ventilators, pacemaker programmers, lab analyzers, and hospital record systems with timestamp-based dosing or audit logs running legacy firmware.</p>
+      </div>
+    </div>
+
+    <!-- Severity table -->
+    <h3>Affected Systems — Severity Matrix</h3>
+    <div class="reveal" style="overflow-x:auto;">
+      <table class="sys-table">
+        <thead>
+          <tr>
+            <th>System / Component</th>
+            <th>Root Cause</th>
+            <th>Failure Mode</th>
+            <th>Severity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Linux 32-bit Kernel (&lt; 5.6)</strong></td>
+            <td>32-bit <code>time_t</code> in syscall ABI</td>
+            <td>System clock resets to 1901, cron/scheduled tasks fail</td>
+            <td><span class="sev critical">CRITICAL</span></td>
+          </tr>
+          <tr>
+            <td><strong>MySQL TIMESTAMP type</strong></td>
+            <td>Stored as 32-bit Unix time internally</td>
+            <td>Timestamps beyond 2038-01-19 become NULL or error</td>
+            <td><span class="sev critical">CRITICAL</span></td>
+          </tr>
+          <tr>
+            <td><strong>Ext3 Filesystem</strong></td>
+            <td>Inode timestamps are 32-bit signed</td>
+            <td>File modification times become incorrect post-overflow</td>
+            <td><span class="sev high">HIGH</span></td>
+          </tr>
+          <tr>
+            <td><strong>OpenSSL / TLS Certs</strong></td>
+            <td>ASN.1 UTCTime uses 2-digit years pre-2050</td>
+            <td>Certs with expiry > 2049 parsed incorrectly; HTTPS breaks</td>
+            <td><span class="sev critical">CRITICAL</span></td>
+          </tr>
+          <tr>
+            <td><strong>Embedded RTOS (FreeRTOS, VxWorks)</strong></td>
+            <td>32-bit tick counter &amp; time APIs</td>
+            <td>Device behaves as if in 1901; may loop, crash, or brick</td>
+            <td><span class="sev critical">CRITICAL</span></td>
+          </tr>
+          <tr>
+            <td><strong>NTP Daemon (ntpd) pre-4.3</strong></td>
+            <td>Uses 32-bit NTP Era 0 (ends 2036)</td>
+            <td>Time sync fails; cascading failures across networked systems</td>
+            <td><span class="sev critical">CRITICAL</span></td>
+          </tr>
+          <tr>
+            <td><strong>Java pre-JDK8 (Date, Calendar)</strong></td>
+            <td><code>java.util.Date</code> uses long (64-bit) internally but formatting libraries may not</td>
+            <td>SimpleDateFormat and legacy libs may mis-parse 2038+ dates</td>
+            <td><span class="sev high">HIGH</span></td>
+          </tr>
+          <tr>
+            <td><strong>PHP pre-7 (32-bit build)</strong></td>
+            <td><code>time()</code> returns 32-bit int on 32-bit PHP</td>
+            <td>mktime(), strtotime() return incorrect or negative values</td>
+            <td><span class="sev high">HIGH</span></td>
+          </tr>
+          <tr>
+            <td><strong>FAT32 Filesystem</strong></td>
+            <td>Max representable year = 2107 (10-bit year field)</td>
+            <td>Not directly affected by Unix epoch, but year > 2107 breaks</td>
+            <td><span class="sev medium">MEDIUM</span></td>
+          </tr>
+          <tr>
+            <td><strong>Hardware RTC Chips (32-bit)</strong></td>
+            <td>Many cheap RTCs store Unix time as 32-bit</td>
+            <td>RTC resets to Unix epoch 0 or 1901; time-dependent boot fails</td>
+            <td><span class="sev high">HIGH</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- System flow diagram -->
+    <h3>How Failure Cascades</h3>
+    <div class="diagram-wrap reveal">
+      <div class="diagram-title">🌊 Cascading Failure Model — from RTC to Application</div>
+      <div class="pipeline-v">
+        <div class="pipe-block orange" style="width:60%; text-align:center;">Hardware RTC<br><span style="font-size:0.7rem;">32-bit overflow → reports 1901</span></div>
+        <div class="pipe-arrow-v">↓</div>
+        <div class="pipe-block amber" style="width:65%; text-align:center;">Kernel Clock Subsystem<br><span style="font-size:0.7rem;">Reads corrupt time from RTC, propagates to all syscalls</span></div>
+        <div class="pipe-arrow-v">↓</div>
+        <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; width:100%;">
+          <div class="pipe-block teal" style="flex:1; min-width:130px; text-align:center;">NTP sync<br><span style="font-size:0.7rem;">fails (negative delta)</span></div>
+          <div class="pipe-block teal" style="flex:1; min-width:130px; text-align:center;">Cron / Systemd<br><span style="font-size:0.7rem;">timers fire wrong</span></div>
+          <div class="pipe-block teal" style="flex:1; min-width:130px; text-align:center;">TLS Handshake<br><span style="font-size:0.7rem;">cert check fails</span></div>
+          <div class="pipe-block teal" style="flex:1; min-width:130px; text-align:center;">DB Inserts<br><span style="font-size:0.7rem;">wrong timestamps</span></div>
+        </div>
+        <div class="pipe-arrow-v">↓</div>
+        <div class="pipe-block red" style="width:70%; text-align:center;">Application Layer<br><span style="font-size:0.7rem;">Authentication denied · Payments declined · Logs corrupted · Services crash</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 4: HARDWARE DEEP-DIVE
+       ══════════════════════════════════════════════════════════ -->
+  <section id="hardware">
+    <div class="section-label">04 — Hardware Impact</div>
+    <h2>Silicon &amp; Circuits:<br>The Hardware Crisis</h2>
+
+    <p>
+      Software can be patched remotely overnight. Hardware cannot. The 2038 problem is not only a software bug — it is baked into billions of physical chips, circuit boards, and firmware ROMs that have no update mechanism. Understanding the hardware layer is essential because <strong>a fixed OS running on a broken RTC chip still gives you the wrong time</strong>.
+    </p>
+
+    <!-- RTC anatomy -->
+    <h3>Real-Time Clock (RTC) Chips</h3>
+    <p>
+      Every computer, embedded board, and microcontroller that needs to know the time while powered off contains a <strong>Real-Time Clock chip</strong> — a tiny, battery-backed oscillator that keeps ticking even when the main system is off. Common chips include the DS1307, DS3231, PCF8523, and M41T80. Many of these store time internally as a 32-bit Unix epoch integer in their registers.
+    </p>
+
+    <div class="diagram-wrap reveal">
+      <div class="diagram-title">🔌 RTC Chip Architecture — Where 32-bit Time Lives</div>
+      <div style="display:flex; flex-direction:column; gap:0.5rem; min-width:480px;">
+        <div style="display:flex; gap:0.5rem; align-items:stretch; flex-wrap:wrap;">
+          <div class="pipe-block cream" style="flex:1; min-width:130px;">32.768 kHz<br>Crystal Oscillator<br><span style="font-size:0.65rem; color:var(--mid-text);">heartbeat of the clock</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-block orange" style="flex:1; min-width:130px;">Counter Register<br><span style="font-size:0.65rem;">32-bit on DS1307<br>64-bit on newer chips</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-block amber" style="flex:1; min-width:130px;">I²C / SPI Bus<br><span style="font-size:0.65rem;">register read by CPU</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-block teal" style="flex:1; min-width:130px;">Kernel RTC Driver<br><span style="font-size:0.65rem;">feeds system clock</span></div>
+        </div>
+        <div style="margin-top:1rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div style="background:rgba(229,62,62,0.1); border:1px solid rgba(229,62,62,0.3); border-radius:8px; padding:1rem;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.72rem; font-weight:700; color:var(--red-vivid); margin-bottom:0.5rem;">❌ AFFECTED CHIPS</div>
+            <div style="font-size:0.85rem; color:var(--dark-text); line-height:1.8;">
+              DS1307 (32-bit epoch register)<br>
+              DS1337 / DS1338<br>
+              PCF8563 (BCD, 2-digit year)<br>
+              M41T80 series<br>
+              Many cheap eBay/AliExpress RTCs<br>
+              Most pre-2010 BIOS RTC registers
+            </div>
+          </div>
+          <div style="background:rgba(13,148,136,0.1); border:1px solid rgba(13,148,136,0.3); border-radius:8px; padding:1rem;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:0.72rem; font-weight:700; color:var(--teal); margin-bottom:0.5rem;">✅ SAFE CHIPS</div>
+            <div style="font-size:0.85rem; color:var(--dark-text); line-height:1.8;">
+              DS3231 (BCD, year 0–99 offset)<br>
+              RV-3028-C7 (64-bit capable)<br>
+              PCF2131 (century bit support)<br>
+              AB1805 (extended epoch)<br>
+              Modern UEFI/BMC RTC modules<br>
+              Any chip storing BCD + century byte
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <span class="callout-icon">⚡</span>
+      <div class="callout-body">
+        <strong>The DS1307 Problem</strong>
+        <p>The DS1307 — one of the most widely-used and cloned RTC chips in the world, found on countless Arduino shields, Raspberry Pi HATs, and industrial boards — stores seconds since epoch in a 32-bit register. When it overflows in 2038, it wraps to zero (Unix epoch: Jan 1, 1970). The system will think it just powered on for the very first time.</p>
+      </div>
+    </div>
+
+    <h3>BIOS, UEFI &amp; Hardware Clocks</h3>
+    <p>
+      Legacy BIOS systems store the RTC as BCD (Binary Coded Decimal) in the CMOS chip — separate from Unix epoch — so they actually sidestep the overflow. However, the <strong>bridge between hardware time and Unix time</strong> happens in the OS kernel. On 32-bit x86 systems with old kernels, even a correct BIOS clock gets converted to a truncated 32-bit <code>time_t</code> and the damage occurs at that conversion step.
+    </p>
+    <p>
+      Modern UEFI firmware uses EFI_TIME structures that support year values up to 9999 — these are safe. But UEFI alone doesn't protect you: a 32-bit Linux kernel booted from UEFI still truncates time when passing it to userspace via the old 32-bit syscall ABI.
+    </p>
+
+    <h3>Microcontrollers &amp; System-on-Chip</h3>
+    <p>
+      The embedded world is where the problem is most intractable. ARM Cortex-M0, M3, M4 cores are natively 32-bit. Their HAL (Hardware Abstraction Layer) libraries — including STM32 HAL, Nordic nRF5 SDK, and ESP-IDF for older ESP8266/ESP32 targets — expose time as a <code>uint32_t</code> or <code>int32_t</code>. These devices have no OS to patch. You must reflash the firmware, and for devices already deployed in the field — inside smart meters, industrial sensors, or implanted medical devices — reflashing is often physically impossible.
+    </p>
+
+    <div class="diagram-wrap reveal">
+      <div class="diagram-title">🏭 Embedded Hardware Vulnerability Map</div>
+      <div class="card-grid" style="margin:0;">
+        <div class="card" style="border-color:rgba(229,62,62,0.4);">
+          <span class="card-icon">🏥</span>
+          <h4>Medical Devices</h4>
+          <p>Infusion pumps, ventilator controllers, lab analyzers, pacemaker programmers. Often run ARM Cortex-M with FreeRTOS. Regulated hardware — cannot be updated without FDA/CE re-approval. Must be <strong>physically replaced</strong>.</p>
+        </div>
+        <div class="card" style="border-color:rgba(229,62,62,0.4);">
+          <span class="card-icon">⚡</span>
+          <h4>Smart Meters &amp; Grid</h4>
+          <p>Electricity, gas, and water smart meters deployed in hundreds of millions of homes. Firmware locked by utility companies. Tamper-evident seals. Rolling national replacement programs will take a decade.</p>
+        </div>
+        <div class="card" style="border-color:rgba(245,166,35,0.4);">
+          <span class="card-icon">🚗</span>
+          <h4>Automotive ECUs</h4>
+          <p>Modern vehicles contain 50–100 ECUs. TCU (Telematics), OBD-II loggers, dashcams, and GPS modules built before 2015 use 32-bit time. Over-the-air updates cover some — older models do not support OTA.</p>
+        </div>
+        <div class="card" style="border-color:rgba(245,166,35,0.4);">
+          <span class="card-icon">🏭</span>
+          <h4>Industrial PLCs</h4>
+          <p>Siemens S7-300, Allen-Bradley MicroLogix, and similar PLCs running SCADA software with 32-bit time APIs. Often controlling physical infrastructure (power plants, water treatment). Downtime is measured in millions per hour.</p>
+        </div>
+        <div class="card" style="border-color:rgba(13,148,136,0.3);">
+          <span class="card-icon">📡</span>
+          <h4>Network Infrastructure</h4>
+          <p>Legacy Cisco IOS on 32-bit MIPS routers, older Juniper JunOS builds, and ISP-grade SOHO devices. Time affects BGP route expiry, certificate validation, and NTP sync chains.</p>
+        </div>
+        <div class="card" style="border-color:rgba(13,148,136,0.3);">
+          <span class="card-icon">🛰️</span>
+          <h4>Satellites &amp; Aviation</h4>
+          <p>Some older satellites and avionics systems use 32-bit GPS/UTC epoch counters. GPS Week Number rollover (2019) was a preview — many devices failed. Same class of problem, same urgency.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>The Hardware Fix Pipeline</h3>
+    <div class="diagram-wrap reveal">
+      <div class="diagram-title">🔧 Hardware Remediation Decision Tree</div>
+      <div style="display:flex; flex-direction:column; gap:0.4rem; min-width:480px;">
+        <div class="pipe-block cream" style="width:60%; margin:0 auto; text-align:center;">Device uses time?</div>
+        <div style="display:flex; gap:2rem; justify-content:center; padding:0.5rem 0;">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:0.4rem; flex:1;">
+            <div style="font-size:0.75rem; color:var(--teal); font-family:'JetBrains Mono',monospace; font-weight:700;">YES</div>
+            <div class="pipe-block amber" style="width:100%; text-align:center;">Can firmware be updated?</div>
+            <div style="display:flex; gap:1rem; width:100%;">
+              <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:0.3rem;">
+                <div style="font-size:0.7rem; color:var(--teal); font-family:'JetBrains Mono',monospace;">YES</div>
+                <div class="pipe-block teal" style="width:100%; text-align:center; font-size:0.72rem;">Patch firmware<br>with 64-bit epoch lib</div>
+              </div>
+              <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:0.3rem;">
+                <div style="font-size:0.7rem; color:var(--red-vivid); font-family:'JetBrains Mono',monospace;">NO</div>
+                <div class="pipe-block red" style="width:100%; text-align:center; font-size:0.72rem;">Schedule physical<br>hardware replacement</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:0.4rem; flex:0 0 auto;">
+            <div style="font-size:0.75rem; color:var(--mid-text); font-family:'JetBrains Mono',monospace; font-weight:700;">NO</div>
+            <div class="pipe-block cream" style="text-align:center; font-size:0.72rem;">Not affected<br>✓ Safe</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 5: RUNTIME LIBRARIES
+       ══════════════════════════════════════════════════════════ -->
+  <section id="libraries">
+    <div class="section-label">05 — Runtime Libraries</div>
+    <h2>The Libraries That<br>Carry the Bug</h2>
+
+    <p>
+      The 2038 problem doesn't live in application code alone. It lives inside the runtime libraries that every C and C++ program links against — and in the standard libraries of higher-level languages that call them under the hood. Here is a named breakdown of every major library ecosystem and its status.
+    </p>
+
+    <h3>C Standard Library Implementations</h3>
+    <div class="reveal" style="overflow-x:auto;">
+      <table class="sys-table">
+        <thead>
+          <tr><th>Library</th><th>Platform</th><th>32-bit time_t?</th><th>Fix Available?</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>glibc (GNU C Library)</strong></td>
+            <td>Linux (most distros)</td>
+            <td>32-bit on 32-bit targets pre-glibc 2.34</td>
+            <td><span class="sev high">glibc ≥ 2.34</span></td>
+            <td>Use <code>-D_TIME_BITS=64</code>. New 64-bit syscall wrappers: <code>clock_gettime64</code>, <code>__clock_gettime64</code></td>
+          </tr>
+          <tr>
+            <td><strong>musl libc</strong></td>
+            <td>Alpine Linux, embedded</td>
+            <td>64-bit on 64-bit; <em>32-bit on 32-bit</em> until musl 1.2</td>
+            <td><span class="sev high">musl ≥ 1.2.0</span></td>
+            <td>musl 1.2 (2020) uses 64-bit time on all architectures. Major win for embedded Linux.</td>
+          </tr>
+          <tr>
+            <td><strong>newlib</strong></td>
+            <td>Bare-metal / RTOS (ARM, MIPS)</td>
+            <td>32-bit time_t by default</td>
+            <td><span class="sev critical">Manual only</span></td>
+            <td>Used in embedded toolchains (arm-none-eabi). No automatic 64-bit upgrade. Must patch manually.</td>
+          </tr>
+          <tr>
+            <td><strong>uClibc / uClibc-ng</strong></td>
+            <td>Embedded Linux (OpenWRT, etc.)</td>
+            <td>32-bit on 32-bit targets</td>
+            <td><span class="sev high">uClibc-ng ≥ 1.0.43</span></td>
+            <td>Partial 64-bit time support. Many OpenWRT router builds not yet updated.</td>
+          </tr>
+          <tr>
+            <td><strong>dietlibc</strong></td>
+            <td>Minimalist Linux</td>
+            <td>32-bit</td>
+            <td><span class="sev critical">No fix yet</span></td>
+            <td>Minimalist C library, no 64-bit time migration as of 2024. Avoid for new projects.</td>
+          </tr>
+          <tr>
+            <td><strong>MSVCRT / UCRT (Windows)</strong></td>
+            <td>Windows</td>
+            <td>64-bit since VS 2005</td>
+            <td><span class="sev medium">Already fixed</span></td>
+            <td>Microsoft changed <code>time_t</code> to 64-bit in Visual C++ 2005. Old <code>_USE_32BIT_TIME_T</code> flag can revert this — avoid it.</td>
+          </tr>
+          <tr>
+            <td><strong>Bionic (Android NDK)</strong></td>
+            <td>Android</td>
+            <td>64-bit on 64-bit ABIs; 32-bit on 32-bit ABIs</td>
+            <td><span class="sev high">Android ≥ 10 drops 32-bit</span></td>
+            <td>Android 10+ dropped support for 32-bit-only devices. Older Android versions on 32-bit hardware remain vulnerable.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Higher-Level Language Runtimes</h3>
+    <div class="card-grid reveal">
+      <div class="card">
+        <span class="card-icon">☕</span>
+        <h4>Java / JVM</h4>
+        <p><code>java.util.Date</code> and <code>System.currentTimeMillis()</code> use a 64-bit <code>long</code> internally — safe. However, <strong>legacy <code>SimpleDateFormat</code></strong> and older serialized <code>Date</code> objects with 2-digit year assumptions can still misbehave. Use <code>java.time</code> (Java 8+) exclusively.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🐍</span>
+        <h4>Python</h4>
+        <p>Python's <code>time.time()</code> returns a float backed by a 64-bit C double. <code>datetime</code> objects are safe. However, <code>struct.pack('i', int(time.time()))</code> — a common serialization pattern — silently truncates to 32-bit. Watch binary format code carefully.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">💎</span>
+        <h4>Ruby / Ruby on Rails</h4>
+        <p>Ruby's <code>Time</code> class uses 64-bit internally (since Ruby 1.9.3). But ActiveRecord's <code>:datetime</code> type maps to MySQL TIMESTAMP on some configurations — inheriting the 32-bit database limit. Always use <code>:datetime</code> mapped to <code>DATETIME</code> in schema.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🐘</span>
+        <h4>PHP</h4>
+        <p>64-bit PHP (default since PHP 7 on 64-bit systems) returns 64-bit from <code>time()</code>. <strong>32-bit PHP builds</strong> (still common on some shared hosting) return a signed 32-bit int — overflow hits in 2038. Check with <code>PHP_INT_SIZE</code>: must equal <code>8</code>.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🦀</span>
+        <h4>Rust</h4>
+        <p><code>std::time::SystemTime</code> uses platform time but stores duration as <code>u64</code> seconds + <code>u32</code> nanoseconds — safe for hundreds of billions of years. Rust's type system also makes accidental 32-bit casts harder to introduce silently.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🟨</span>
+        <h4>JavaScript / Node.js</h4>
+        <p><code>Date.now()</code> and <code>new Date()</code> use IEEE 754 double (64-bit float), representing milliseconds since epoch. Max safe value covers year 275,760 — completely safe. But code doing <code>Math.floor(Date.now()/1000) | 0</code> (bitwise OR truncates to 32-bit!) will break.</p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <span class="callout-icon">🔍</span>
+      <div class="callout-body">
+        <strong>The Hidden Truncation Pattern</strong>
+        <p>The most insidious bug isn't using the wrong type — it's the silent cast. <code>(int)time(NULL)</code>, <code>timestamp | 0</code> in JS, <code>struct.pack('i', t)</code> in Python, and <code>INT(UNIX_TIMESTAMP())</code> in SQL all silently truncate a safe 64-bit value back down to 32 bits. These are the hardest bugs to find because they compile and run perfectly — until January 19, 2038.</p>
+      </div>
+    </div>
+
+    <!-- Library pipeline diagram -->
+    <div class="diagram-wrap reveal">
+      <div class="diagram-title">📦 Library Call Stack — Where Truncation Happens</div>
+      <div style="display:flex; flex-direction:column; gap:0.3rem; min-width:420px;">
+        <div class="pipe-block teal" style="text-align:center;">Hardware Clock / RTC</div>
+        <div class="pipe-arrow-v">↓ read by</div>
+        <div class="pipe-block amber" style="text-align:center;">Kernel <code style="font-size:0.75rem;">clock_gettime()</code> syscall</div>
+        <div class="pipe-arrow-v">↓ wrapped by</div>
+        <div class="pipe-block orange" style="text-align:center;">C Standard Library (glibc / musl / newlib)<br><span style="font-size:0.7rem;">returns time_t — safe if 64-bit, broken if 32-bit</span></div>
+        <div class="pipe-arrow-v">↓ called by</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem;">
+          <div class="pipe-block cream" style="text-align:center; font-size:0.72rem;">Python runtime<br><code>time.time()</code></div>
+          <div class="pipe-block cream" style="text-align:center; font-size:0.72rem;">Java JNI<br><code>System.currentTimeMillis()</code></div>
+          <div class="pipe-block cream" style="text-align:center; font-size:0.72rem;">PHP engine<br><code>time()</code></div>
+        </div>
+        <div class="pipe-arrow-v">↓ used in</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+          <div class="pipe-block red" style="text-align:center; font-size:0.72rem;">❌ <code>(int)t</code> cast<br>Truncated to 32-bit</div>
+          <div class="pipe-block teal" style="text-align:center; font-size:0.72rem;">✅ <code>int64_t t</code><br>Full 64-bit preserved</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 5b: GAMES & GAME ENGINES
+       ══════════════════════════════════════════════════════════ -->
+  <section id="games">
+    <div class="section-label">05b — Games &amp; Game Engines</div>
+    <h2>Game Over? How Old<br>Games Will Break</h2>
+
+    <p>
+      This is the section nobody talks about — but it affects hundreds of millions of players. Video games, game engines, and their ecosystems are riddled with 32-bit timestamp assumptions baked into save files, multiplayer matchmaking, leaderboards, licensing DRM, and replay systems. Many of these were compiled once, shipped on a disc, and never updated.
+    </p>
+
+    <div class="pull-quote">
+      <p>Imagine booting your favourite 2003 game in 2038 and watching it think every save file is from 1901 — or the anti-cheat system banning you because your game session timestamp is negative.</p>
+    </div>
+
+    <h3>Where Games Use Timestamps</h3>
+    <div class="card-grid reveal">
+      <div class="card">
+        <span class="card-icon">💾</span>
+        <h4>Save File Timestamps</h4>
+        <p>Save files often store the creation and modification time as a 32-bit Unix timestamp to sort "most recent save" slots. Post-overflow, all saves appear to be from 1901 — wrong slot ordering, broken "continue game" logic, or corruption if the engine validates time monotonicity.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🏆</span>
+        <h4>Leaderboards &amp; Replays</h4>
+        <p>Speedrun replays, ghost data, and online leaderboard entries embed timestamps. A negative timestamp will sort to the "oldest" position or cause server-side validation rejection. Old replay files become unplayable if the engine checks that replay timestamps are in the past.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🔐</span>
+        <h4>DRM &amp; License Expiry</h4>
+        <p>Time-limited licenses, trial periods, and online authentication tokens use Unix timestamps. A 32-bit token with an expiry date beyond 2038 may already fail today. After overflow, all expiry checks break — games either lock everyone out or let everyone in permanently.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🌐</span>
+        <h4>Multiplayer &amp; Matchmaking</h4>
+        <p>Game servers use timestamps for session management, anti-cheat timing windows, and rate limiting. A negative session timestamp will cause "session expired" errors immediately on connect, effectively taking down multiplayer for any game with a 32-bit-based session system.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🎮</span>
+        <h4>Game Engine Internal Timers</h4>
+        <p>Scripting systems in older game engines use <code>os.time()</code> (Lua), <code>time.time()</code> (Python-based engines), or <code>time(NULL)</code> in C++ engine code for event scheduling, cooldown timers, and world-state persistence.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">📜</span>
+        <h4>Modding &amp; Community Tools</h4>
+        <p>Community-built tools, save editors, and mod managers written in 32-bit era C/C++ or early Python 2 builds are almost universally affected. These tools will produce corrupted save files when run after 2038.</p>
+      </div>
+    </div>
+
+    <h3>Game Engines — Status Check</h3>
+    <div class="reveal" style="overflow-x:auto;">
+      <table class="sys-table">
+        <thead>
+          <tr><th>Engine / Platform</th><th>Time API Used</th><th>2038 Safe?</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Quake / id Tech 2</strong> (1996)</td>
+            <td><code>time(NULL)</code> → <code>int</code></td>
+            <td><span class="sev critical">NO</span></td>
+            <td>Original binaries compiled for 32-bit DOS/Win95. Source ports (QuakeSpasm, vkQuake) have fixed this but original executables have not.</td>
+          </tr>
+          <tr>
+            <td><strong>Doom / id Tech 1</strong> (1993)</td>
+            <td>Internal tick counter, not epoch</td>
+            <td><span class="sev medium">MOSTLY SAFE</span></td>
+            <td>Uses game-tick counter, not wall clock. But save file I/O timestamps and demo headers may use system time.</td>
+          </tr>
+          <tr>
+            <td><strong>Unreal Engine 3</strong> (UE3)</td>
+            <td><code>appSeconds()</code> → <code>DOUBLE</code>, save timestamps → <code>INT32</code></td>
+            <td><span class="sev high">PARTIAL</span></td>
+            <td>Game logic timers are float-based (safe). Save file and session timestamps use 32-bit int. Affects all UE3-era titles (2006–2014).</td>
+          </tr>
+          <tr>
+            <td><strong>Unreal Engine 4/5</strong></td>
+            <td><code>FDateTime</code> backed by <code>int64</code></td>
+            <td><span class="sev medium">YES</span></td>
+            <td><code>FDateTime</code> uses 100-nanosecond ticks since Jan 1 0001 stored as int64. Range: year 9999. Safe.</td>
+          </tr>
+          <tr>
+            <td><strong>Unity (pre-2019)</strong></td>
+            <td><code>System.DateTime</code> (64-bit .NET) + native plugins may use 32-bit</td>
+            <td><span class="sev high">PARTIAL</span></td>
+            <td>.NET DateTime is 64-bit. But native C++ plugins, Steamworks SDK calls, and asset bundle timestamps can embed 32-bit values.</td>
+          </tr>
+          <tr>
+            <td><strong>Godot 4.x</strong></td>
+            <td><code>Time.get_unix_time_from_system()</code> → float64</td>
+            <td><span class="sev medium">YES</span></td>
+            <td>Godot 4 uses double-precision float for time — safe until year ~285 million. Godot 3.x on 32-bit export targets may not be.</td>
+          </tr>
+          <tr>
+            <td><strong>Game Boy Advance / NDS homebrew</strong></td>
+            <td>32-bit tick counter / RTC register</td>
+            <td><span class="sev critical">NO</span></td>
+            <td>GBA/DS real-time clock uses BCD with only 2-digit year (00–99). Year 2100 problem, not 2038, but same class of bug.</td>
+          </tr>
+          <tr>
+            <td><strong>Steam Platform</strong></td>
+            <td>Steamworks API: <code>RTime32</code> type</td>
+            <td><span class="sev critical">NO — RTime32</span></td>
+            <td><strong>Valve uses <code>RTime32</code> — a typedef for <code>uint32_t</code> — throughout Steamworks SDK</strong> for achievement unlock times, item acquisition dates, and friend activity. Overflows 2038.</td>
+          </tr>
+          <tr>
+            <td><strong>GOG / Epic Games Store</strong></td>
+            <td>GOG Galaxy SDK: 64-bit; EGS: int64</td>
+            <td><span class="sev medium">YES</span></td>
+            <td>Both platforms use 64-bit timestamps in their modern SDKs. Legacy GOG Galaxy 1.x used 32-bit in some calls.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout danger">
+      <span class="callout-icon">🎮</span>
+      <div class="callout-body">
+        <strong>Valve's RTime32 — A Named, Known Vulnerability</strong>
+        <p>Valve's Steamworks SDK defines <code>RTime32</code> as <code>typedef uint32_t RTime32;</code> and uses it pervasively for achievement timestamps, inventory item dates, user ban expiry, and friend activity. On unsigned overflow (Feb 7, 2106 for <code>uint32_t</code>), or when representing dates post-2038 as signed, this breaks. Valve is aware and migration is ongoing — but the SDK ABI means old game binaries will still embed the broken type.</p>
+      </div>
+    </div>
+
+    <h3>Fix Pattern for Game Engines (C++)</h3>
+    <div class="code-section reveal">
+      <div class="code-header">
+        <div class="file-badge">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span>game_time_fix.cpp — Save File Timestamp Migration</span>
+        </div>
+        <span class="lang-badge">C++ Game Engine</span>
+      </div>
+      <pre><code><span class="pp">#include</span> <span class="st">&lt;cstdint&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;chrono&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;cstring&gt;</span>
+
+<span class="cm">/*
+ * LEGACY save file header — embedded in shipped .sav files worldwide.
+ * Cannot change the file format without breaking backwards compat.
+ */</span>
+<span class="pp">#pragma</span> pack(push, 1)
+<span class="kw">struct</span> LegacySaveHeader_v1 {
+    <span class="ty">uint32_t</span> magic;
+    <span class="ty">uint32_t</span> <span class="bad">save_time</span>;    <span class="cm">// ← 32-bit Unix epoch. BREAKS 2038.</span>
+    <span class="ty">uint32_t</span> playtime_secs;
+    <span class="ty">char</span>     player_name[32];
+};
+<span class="pp">#pragma</span> pack(pop)
+
+<span class="cm">/* ✅ NEW header — version 2, with 64-bit timestamp and magic bump */</span>
+<span class="pp">#pragma</span> pack(push, 1)
+<span class="kw">struct</span> SaveHeader_v2 {
+    <span class="ty">uint32_t</span> magic;
+    <span class="ty">uint32_t</span> version;           <span class="cm">// = 2</span>
+    <span class="ty good-code">int64_t</span>  <span class="good-code">save_time_64</span>;     <span class="cm">// ← 64-bit. Safe for 292 billion years.</span>
+    <span class="ty">uint64_t</span> playtime_ms;       <span class="cm">// millisecond precision too</span>
+    <span class="ty">char</span>     player_name[32];
+    <span class="ty">uint8_t</span>  padding[4];        <span class="cm">// maintain alignment</span>
+};
+<span class="pp">#pragma</span> pack(pop)
+
+<span class="cm">/* Migration function: upgrade old save to new format */</span>
+SaveHeader_v2 <span class="fn">migrate_save_header</span>(<span class="kw">const</span> LegacySaveHeader_v1& old) {
+    SaveHeader_v2 nw{};
+    nw.magic        = old.magic;
+    nw.version      = <span class="num">2</span>;
+    <span class="cm">/* Extend 32-bit epoch to 64-bit — safe because 2038 hasn't passed yet */</span>
+    nw.<span class="good-code">save_time_64</span> = <span class="kw">static_cast</span>&lt;<span class="ty">int64_t</span>&gt;(
+        <span class="kw">static_cast</span>&lt;<span class="ty">uint32_t</span>&gt;(old.save_time)
+    );
+    nw.playtime_ms  = (<span class="ty">uint64_t</span>)old.playtime_secs * <span class="num">1000</span>;
+    <span class="fn">memcpy</span>(nw.player_name, old.player_name, <span class="num">32</span>);
+    <span class="kw">return</span> nw;
+}
+
+<span class="cm">/* ✅ Always use this to get current save timestamp */</span>
+<span class="ty">int64_t</span> <span class="fn">get_save_timestamp</span>() {
+    <span class="kw">using</span> SC = std::chrono::system_clock;
+    <span class="kw">return</span> std::chrono::<span class="fn">duration_cast</span>&lt;std::chrono::seconds&gt;(
+        SC::now().time_since_epoch()
+    ).count();  <span class="cm">// returns int64_t — safe</span>
+}</code></pre>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 5c: WINDOWS & MSVC
+       ══════════════════════════════════════════════════════════ -->
+  <section id="windows">
+    <div class="section-label">05c — Windows &amp; MSVC</div>
+    <h2>Windows: Fixed Early,<br>But Traps Remain</h2>
+
+    <p>
+      Microsoft actually addressed the core <code>time_t</code> issue ahead of the broader industry. Starting with <strong>Visual C++ 2005 (MSVC 8.0)</strong>, <code>time_t</code> was silently changed from a 32-bit to a 64-bit type on 64-bit Windows. This was a proactive fix — but it introduced new breakage of its own, and several serious traps remain for Windows developers.
+    </p>
+
+    <div class="diagram-wrap reveal">
+      <div class="diagram-title">🪟 Windows time_t Evolution Timeline</div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="tl-year">Windows 95 / NT 4.0 — MSVC 4–6</div>
+          <div class="tl-text"><code>time_t</code> is <code>long</code> — 32-bit on all targets. All CRT time functions share the same 2038 vulnerability as Unix.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-year">Visual C++ 2005 (MSVC 8.0) — <strong>THE FIX</strong></div>
+          <div class="tl-text">Microsoft changes <code>time_t</code> to 64-bit on 64-bit builds. Introduces <code>_time64()</code>, <code>_localtime64()</code>, <code>_mktime64()</code> as explicit 64-bit variants. Old 32-bit functions renamed to <code>_time32()</code>.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-year">Windows Vista / Server 2008</div>
+          <div class="tl-text">Win32 API <code>FILETIME</code> struct (64-bit 100ns intervals since Jan 1, 1601) becomes the recommended time representation. <code>GetSystemTimeAsFileTime()</code> is safe.</div>
+        </div>
+        <div class="timeline-item danger">
+          <div class="tl-year">⚠ TODAY — The Traps Still Active</div>
+          <div class="tl-text">Legacy DLLs compiled with MSVC 6, code using <code>_USE_32BIT_TIME_T</code>, and 32-bit Windows builds still use 32-bit <code>time_t</code>. Mixing 32-bit and 64-bit CRT modules in one process causes silent data corruption.</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>The MSVC-Specific Traps</h3>
+
+    <div class="code-section reveal">
+      <div class="code-header">
+        <div class="file-badge">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span>windows_time_traps.cpp — What Not To Do on Windows</span>
+        </div>
+        <span class="lang-badge">C++ / MSVC</span>
+      </div>
+      <pre><code><span class="cm">// ❌ TRAP 1: The _USE_32BIT_TIME_T poison flag
+// Defining this anywhere in your project reverts time_t to 32-bit
+// even on 64-bit Windows. Often lurks in legacy project .vcxproj files.</span>
+<span class="pp">#define</span> <span class="bad">_USE_32BIT_TIME_T</span>   <span class="cm">// ← NEVER define this. Ever.</span>
+<span class="pp">#include</span> <span class="st">&lt;time.h&gt;</span>
+<span class="cm">// Now sizeof(time_t) == 4 again. You've recreated the 2038 bug manually.</span>
+
+<span class="cm">// ✅ CORRECT: Do NOT define _USE_32BIT_TIME_T. Just use time_t normally.</span>
+<span class="pp">#include</span> <span class="st">&lt;time.h&gt;</span>
+<span class="cm">// On MSVC 2005+ x64: sizeof(time_t) == 8. Safe.</span>
+
+<span class="cm">// ───────────────────────────────────────────────────────────────────
+
+// ❌ TRAP 2: Mixing DLLs compiled with different CRT versions.
+// A DLL compiled with MSVC6 (__time32_t) passing time_t to a caller
+// compiled with MSVC2019 (__time64_t) causes struct size mismatch.</span>
+
+<span class="cm">// In the old DLL (32-bit time_t):</span>
+<span class="kw">__declspec</span>(dllexport) <span class="ty">time_t</span> <span class="fn">get_expiry</span>() {
+    <span class="kw">return</span> <span class="fn">time</span>(NULL) + <span class="num">86400</span>; <span class="cm">// returns 4-byte value</span>
+}
+
+<span class="cm">// In your new code (64-bit time_t):
+// Calling get_expiry() reads 8 bytes but DLL only wrote 4 — CORRUPTION.</span>
+
+<span class="cm">// ✅ FIX: Recompile ALL DLLs with the same MSVC version.
+//         Or use explicit __time64_t in DLL ABI contracts.</span>
+<span class="kw">__declspec</span>(dllexport) <span class="ty">__time64_t</span> <span class="fn">get_expiry_safe</span>() {
+    <span class="kw">return</span> <span class="fn">_time64</span>(NULL) + <span class="num">86400LL</span>; <span class="cm">// explicit 64-bit — ABI stable</span>
+}
+
+<span class="cm">// ───────────────────────────────────────────────────────────────────
+
+// ❌ TRAP 3: Using FILETIME arithmetic incorrectly</span>
+FILETIME ft;
+<span class="fn">GetSystemTimeAsFileTime</span>(&ft);
+<span class="cm">// ft is two 32-bit DWORDs. Never cast directly to __int64 on unaligned data!</span>
+<span class="ty bad">__int64</span> raw = *(<span class="ty">__int64</span>*)&ft;  <span class="cm">// ← Undefined behaviour on unaligned access</span>
+
+<span class="cm">// ✅ CORRECT: Use ULARGE_INTEGER to safely combine the two DWORDs</span>
+ULARGE_INTEGER uli;
+uli.LowPart  = ft.dwLowDateTime;
+uli.HighPart = ft.dwHighDateTime;
+<span class="ty">__int64</span> <span class="good-code">safe_ft = (<span class="ty">__int64</span>)uli.QuadPart</span>; <span class="cm">// 64-bit FILETIME. Safe until year 30828.</span>
+
+<span class="cm">// ───────────────────────────────────────────────────────────────────
+
+// ✅ BEST PRACTICE on Windows: Use GetSystemTimePreciseAsFileTime (Win8+)
+//    + convert to Unix epoch via well-known offset</span>
+<span class="ty">int64_t</span> <span class="fn">windows_unix_epoch_now</span>() {
+    FILETIME ft2;
+    <span class="fn">GetSystemTimePreciseAsFileTime</span>(&ft2);
+    ULARGE_INTEGER u;
+    u.LowPart  = ft2.dwLowDateTime;
+    u.HighPart = ft2.dwHighDateTime;
+    <span class="cm">// FILETIME epoch is Jan 1, 1601. Unix epoch is Jan 1, 1970.
+    // Difference: 11644473600 seconds = 116444736000000000 * 100ns intervals</span>
+    <span class="kw">return</span> (<span class="ty">int64_t</span>)((u.QuadPart - <span class="num">116444736000000000ULL</span>) / <span class="num">10000000ULL</span>);
+}</code></pre>
+    </div>
+
+    <h3>Windows Runtime Environments Summary</h3>
+    <div class="reveal" style="overflow-x:auto;">
+      <table class="sys-table">
+        <thead>
+          <tr><th>Environment</th><th>time_t Size</th><th>Safe?</th><th>Action Required</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>MSVC 2005+ (x64 build)</strong></td>
+            <td>8 bytes (64-bit)</td>
+            <td><span class="sev medium">YES</span></td>
+            <td>Ensure <code>_USE_32BIT_TIME_T</code> is NOT defined anywhere in project</td>
+          </tr>
+          <tr>
+            <td><strong>MSVC 2005+ (x86/Win32 build)</strong></td>
+            <td>8 bytes (64-bit since VS2005)</td>
+            <td><span class="sev medium">YES</span></td>
+            <td>Still 64-bit on 32-bit builds since VS2005. Verify with <code>sizeof(time_t)</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>MSVC 6.0 and earlier</strong></td>
+            <td>4 bytes (32-bit)</td>
+            <td><span class="sev critical">NO</span></td>
+            <td>Recompile with modern MSVC. Any binary compiled with MSVC6 and still shipping is broken.</td>
+          </tr>
+          <tr>
+            <td><strong>MinGW-w64 (GCC on Windows)</strong></td>
+            <td>8 bytes on 64-bit, 4 bytes on 32-bit builds</td>
+            <td><span class="sev high">PARTIAL</span></td>
+            <td>Use <code>-D_TIME_BITS=64</code> for 32-bit MinGW targets. 64-bit MinGW targets are safe by default.</td>
+          </tr>
+          <tr>
+            <td><strong>Cygwin</strong></td>
+            <td>8 bytes (64-bit since Cygwin 1.7)</td>
+            <td><span class="sev medium">YES</span></td>
+            <td>Keep Cygwin updated. Old Cygwin 1.5 installations are 32-bit.</td>
+          </tr>
+          <tr>
+            <td><strong>WSL 1 / WSL 2</strong></td>
+            <td>Depends on Linux distro inside WSL</td>
+            <td><span class="sev high">PARTIAL</span></td>
+            <td>WSL2 uses a real Linux kernel — follow the Linux guidance. Use 64-bit distro image.</td>
+          </tr>
+          <tr>
+            <td><strong>.NET / C# on Windows</strong></td>
+            <td><code>DateTime</code>: 64-bit ticks since Jan 1, 0001</td>
+            <td><span class="sev medium">YES</span></td>
+            <td>Safe. Never use <code>DateTimeOffset.ToUnixTimeSeconds()</code> result cast to <code>int</code>.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-icon">🪟</span>
+      <div class="callout-body">
+        <strong>The Windows FILETIME Advantage</strong>
+        <p>Windows FILETIME is a 64-bit count of 100-nanosecond intervals since January 1, 1601. It won't overflow until year 30,828 AD — making it one of the safest native time representations in any major OS. If you're doing Windows-native code, prefer <code>GetSystemTimeAsFileTime()</code> over the POSIX <code>time()</code> wrapper.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 6: CODE FIX ── -->
+  <section id="code-fix">
+    <div class="section-label">06 — The Code Fixes</div>
+    <h2>Patching Legacy C/C++:<br>Before &amp; After</h2>
+
+    <p>
+      The solution fundamentally comes down to one thing: <strong>replace every <code>time_t</code> used in 32-bit contexts with a 64-bit equivalent</strong>. Below are real-world patterns that break, why they break, and the corrected versions.
+    </p>
+
+    <div class="callout info">
+      <span class="callout-icon">💡</span>
+      <div class="callout-body">
+        <strong>Compiler Check First</strong>
+        <p>On modern 64-bit Linux, <code>time_t</code> is already 64-bit. But on 32-bit platforms (including many embedded targets), it remains 32-bit. Always verify with <code>printf("%zu\n", sizeof(time_t));</code> — it must print <code>8</code>.</p>
+      </div>
+    </div>
+
+    <!-- Fix 1: Basic time_t -->
+    <h3>Fix 1 — Don't Cast time_t to int</h3>
+    <div class="code-section reveal">
+      <div class="code-header">
+        <div class="file-badge">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span>legacy_time.c — BROKEN ❌</span>
+        </div>
+        <span class="lang-badge">C</span>
+      </div>
+      <pre><code><span class="cm">/* ❌ BROKEN: Stores time as 32-bit int — overflows 2038 */</span>
+<span class="pp">#include</span> <span class="st">&lt;time.h&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;stdio.h&gt;</span>
+
+<span class="kw">void</span> <span class="fn">log_event</span>(<span class="kw">const</span> <span class="ty">char</span> *msg) {
+    <span class="cm">/* BUG: int is 32-bit — overflows on Jan 19, 2038 */</span>
+    <span class="ty">int</span> <span class="bad">timestamp = (<span class="ty">int</span>)time(NULL)</span>;
+
+    <span class="cm">/* BUG: arithmetic on 32-bit values — overflow during addition */</span>
+    <span class="ty">int</span> <span class="bad">expires = timestamp + (30 * 24 * 3600)</span>; <span class="cm">// add 30 days</span>
+
+    <span class="fn">printf</span>(<span class="st">"[%d] %s (expires: %d)\n"</span>, timestamp, msg, expires);
+}
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="cm">/* BUG: struct member is int instead of time_t */</span>
+    <span class="kw">struct</span> Record {
+        <span class="ty">int</span> <span class="bad">created_at</span>;   <span class="cm">// ← will silently corrupt post-2038</span>
+        <span class="ty">char</span> name[64];
+    };
+    <span class="kw">return</span> <span class="num">0</span>;
+}</code></pre>
+    </div>
+
+    <div class="code-section reveal">
+      <div class="code-header">
+        <div class="file-badge">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span>fixed_time.c — FIXED ✅</span>
+        </div>
+        <span class="lang-badge">C</span>
+      </div>
+      <pre><code><span class="cm">/* ✅ FIXED: Use time_t throughout — 64-bit on modern systems */</span>
+<span class="pp">#include</span> <span class="st">&lt;time.h&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;stdint.h&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;stdio.h&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;inttypes.h&gt;</span>   <span class="cm">// for PRId64</span>
+
+<span class="cm">/* Compile-time assertion: fail loudly if time_t is only 4 bytes */</span>
+<span class="fn">_Static_assert</span>(sizeof(<span class="ty">time_t</span>) >= <span class="num">8</span>,
+    <span class="st">"FATAL: time_t is 32-bit. Compile with -D_TIME_BITS=64 or use 64-bit target."</span>);
+
+<span class="kw">void</span> <span class="fn">log_event</span>(<span class="kw">const</span> <span class="ty">char</span> *msg) {
+    <span class="cm">/* ✅ time_t is the correct type for Unix timestamps */</span>
+    <span class="ty">time_t</span> <span class="good-code">timestamp = time(NULL)</span>;
+
+    <span class="cm">/* ✅ arithmetic stays in time_t — safe for 64-bit range */</span>
+    <span class="ty">time_t</span> <span class="good-code">expires = timestamp + (30LL * 24 * 3600)</span>;
+
+    <span class="cm">/* Use PRId64 or cast explicitly for portable printf */</span>
+    <span class="fn">printf</span>(<span class="st">"[%"</span> PRId64 <span class="st">"] %s (expires: %"</span> PRId64 <span class="st">")\n"</span>,
+           (<span class="ty">int64_t</span>)timestamp, msg, (<span class="ty">int64_t</span>)expires);
+}
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="cm">/* ✅ struct members use time_t, not int */</span>
+    <span class="kw">struct</span> Record {
+        <span class="ty">time_t</span> <span class="good-code">created_at</span>;   <span class="cm">// ← 64-bit on properly configured platform</span>
+        <span class="ty">char</span> name[<span class="num">64</span>];
+    };
+    <span class="kw">return</span> <span class="num">0</span>;
+}</code></pre>
+    </div>
+
+    <!-- Fix 2: Embedded / No 64-bit time_t -->
+    <h3>Fix 2 — Embedded Systems: Manual 64-bit Epoch</h3>
+    <div class="code-section reveal">
+      <div class="code-header">
+        <div class="file-badge">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span>embedded_time.c — Portable 64-bit Solution</span>
+        </div>
+        <span class="lang-badge">C (Embedded / Bare-metal)</span>
+      </div>
+      <pre><code><span class="cm">/*
+ * For embedded targets where time_t is stuck at 32-bit,
+ * we define our own 64-bit epoch type and helper functions.
+ * Works on ARM Cortex-M, MIPS, AVR32, etc.
+ */</span>
+<span class="pp">#include</span> <span class="st">&lt;stdint.h&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;stdbool.h&gt;</span>
+
+<span class="cm">/* Custom 64-bit epoch type — immune to 2038 overflow */</span>
+<span class="kw">typedef</span> <span class="ty">int64_t</span> <span class="ty">epoch64_t</span>;
+
+<span class="cm">/* ─── RTC hardware read (platform-specific, returns 32-bit) ─── */</span>
+<span class="kw">extern</span> <span class="ty">uint32_t</span> <span class="fn">rtc_get_raw32</span>(<span class="kw">void</span>);  <span class="cm">// platform BSP function</span>
+
+<span class="cm">/* Era counter stored in battery-backed SRAM or EEPROM */</span>
+<span class="kw">static</span> <span class="ty">uint32_t</span> rtc_era = <span class="num">0</span>;
+<span class="kw">static</span> <span class="ty">uint32_t</span> last_raw = <span class="num">0</span>;
+
+<span class="cm">/*
+ * epoch64_now() — returns a 64-bit Unix timestamp.
+ * Must be called at least once every ~136 years to detect rollover.
+ * In practice, call it at every boot and at least every 24h.
+ */</span>
+<span class="ty">epoch64_t</span> <span class="fn">epoch64_now</span>(<span class="kw">void</span>) {
+    <span class="ty">uint32_t</span> raw = <span class="fn">rtc_get_raw32</span>();
+
+    <span class="cm">/* Detect rollover: if raw went backwards, increment era */</span>
+    <span class="kw">if</span> (raw < last_raw) {
+        rtc_era++;
+        <span class="cm">/* Persist era to non-volatile storage here! */</span>
+    }
+    last_raw = raw;
+
+    <span class="cm">/* Full 64-bit time = (era * 2^32) + raw_seconds */</span>
+    <span class="kw">return</span> (<span class="ty">epoch64_t</span>)((<span class="ty">uint64_t</span>)rtc_era << <span class="num">32</span>) | (<span class="ty">uint64_t</span>)raw;
+}
+
+<span class="cm">/* Convenience: seconds until expiry — safely 64-bit */</span>
+<span class="ty">int64_t</span> <span class="fn">seconds_until</span>(<span class="ty">epoch64_t</span> expiry) {
+    <span class="kw">return</span> (<span class="ty">int64_t</span>)(expiry - <span class="fn">epoch64_now</span>());
+}
+
+<span class="cm">/* Example usage */</span>
+<span class="kw">void</span> <span class="fn">check_cert_expiry</span>(<span class="ty">epoch64_t</span> cert_expiry) {
+    <span class="ty">int64_t</span> secs = <span class="fn">seconds_until</span>(cert_expiry);
+    <span class="kw">if</span> (secs <= <span class="num">0</span>) {
+        <span class="fn">raise_alert</span>(<span class="st">"Certificate expired!"</span>);
+    } <span class="kw">else if</span> (secs < <span class="num">86400</span> * <span class="num">30</span>) {
+        <span class="fn">raise_alert</span>(<span class="st">"Certificate expires within 30 days!"</span>);
+    }
+}</code></pre>
+    </div>
+
+    <!-- Fix 3: C++ chrono -->
+    <h3>Fix 3 — Modern C++: Use std::chrono</h3>
+    <div class="code-section reveal">
+      <div class="code-header">
+        <div class="file-badge">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span>modern_time.cpp — C++20 std::chrono</span>
+        </div>
+        <span class="lang-badge">C++20</span>
+      </div>
+      <pre><code><span class="pp">#include</span> <span class="st">&lt;chrono&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;cstdint&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;format&gt;</span>    <span class="cm">// C++20</span>
+
+<span class="cm">/*
+ * std::chrono::system_clock::time_point uses a 64-bit
+ * representation internally on all major implementations.
+ * This is the idiomatic C++ solution.
+ */</span>
+<span class="kw">namespace</span> SafeTime {
+
+<span class="kw">using</span> Clock     = std::chrono::system_clock;
+<span class="kw">using</span> TimePoint = Clock::time_point;
+<span class="kw">using</span> Duration  = std::chrono::seconds;
+
+<span class="cm">/* Returns current time — never use time(NULL) in C++ */</span>
+<span class="kw">inline</span> TimePoint <span class="fn">now</span>() { <span class="kw">return</span> Clock::now(); }
+
+<span class="cm">/* Safe duration-to-int64 helper */</span>
+<span class="kw">inline</span> <span class="ty">int64_t</span> <span class="fn">to_epoch_s</span>(<span class="kw">const</span> TimePoint& tp) {
+    <span class="kw">return</span> std::chrono::<span class="fn">duration_cast</span>&lt;Duration&gt;(
+        tp.time_since_epoch()
+    ).count();
+}
+
+<span class="cm">/* Add days safely */</span>
+<span class="kw">inline</span> TimePoint <span class="fn">add_days</span>(<span class="kw">const</span> TimePoint& tp, <span class="ty">int64_t</span> days) {
+    <span class="kw">return</span> tp + std::chrono::hours(<span class="num">24</span> * days);
+}
+
+} <span class="cm">// namespace SafeTime</span>
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="kw">auto</span> now       = SafeTime::<span class="fn">now</span>();
+    <span class="kw">auto</span> in30years = SafeTime::<span class="fn">add_days</span>(now, <span class="num">365</span> * <span class="num">30</span>);
+
+    <span class="cm">// Both values are int64_t — no overflow for billions of years</span>
+    std::cout << <span class="st">"Now:       "</span> << SafeTime::<span class="fn">to_epoch_s</span>(now)       << <span class="st">"\n"</span>;
+    std::cout << <span class="st">"In 30yrs:  "</span> << SafeTime::<span class="fn">to_epoch_s</span>(in30years) << <span class="st">"\n"</span>;
+
+    <span class="cm">// Compile-time check: system_clock duration must be 64-bit</span>
+    <span class="kw">static_assert</span>(
+        sizeof(SafeTime::Clock::rep) >= <span class="num">8</span>,
+        <span class="st">"system_clock rep must be at least 64 bits"</span>
+    );
+    <span class="kw">return</span> <span class="num">0</span>;
+}</code></pre>
+    </div>
+
+    <!-- Fix 4: Database -->
+    <h3>Fix 4 — Database Schema Migration</h3>
+    <div class="code-section reveal">
+      <div class="code-header">
+        <div class="file-badge">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span>migrate_timestamps.sql</span>
+        </div>
+        <span class="lang-badge">SQL</span>
+      </div>
+      <pre><code><span class="cm">-- ❌ BROKEN: MySQL TIMESTAMP (32-bit Unix epoch, max 2038-01-19)</span>
+<span class="kw">CREATE TABLE</span> orders (
+    id          <span class="ty">INT</span> <span class="kw">PRIMARY KEY</span>,
+    created_at  <span class="ty bad">TIMESTAMP</span>  <span class="cm">-- ← max 2038-01-19, stored as 32-bit int</span>
+);
+
+<span class="cm">-- ✅ FIXED: Use DATETIME or BIGINT for timestamps</span>
+<span class="kw">CREATE TABLE</span> orders_v2 (
+    id          <span class="ty">BIGINT</span> <span class="kw">PRIMARY KEY</span>,
+    <span class="cm">-- DATETIME(3): microsecond precision, range 1000-9999 AD</span>
+    created_at  <span class="ty good-code">DATETIME(3)</span> <span class="kw">NOT NULL</span> <span class="kw">DEFAULT</span> <span class="fn">CURRENT_TIMESTAMP</span>(<span class="num">3</span>),
+    <span class="cm">-- Or store epoch as BIGINT for portability</span>
+    epoch_ms    <span class="ty good-code">BIGINT</span> <span class="kw">NOT NULL</span>   <span class="cm">-- milliseconds since epoch, 64-bit</span>
+);
+
+<span class="cm">-- Migration: Convert existing TIMESTAMP → DATETIME</span>
+<span class="kw">ALTER TABLE</span> orders
+    <span class="kw">MODIFY COLUMN</span> created_at <span class="ty good-code">DATETIME(3)</span>;
+
+<span class="cm">-- Check for timestamps that are already 2038-unsafe</span>
+<span class="kw">SELECT</span> id, created_at
+<span class="kw">FROM</span>   orders
+<span class="kw">WHERE</span>  created_at > <span class="st">'2038-01-19 03:14:07'</span>;  <span class="cm">-- these are already broken</span>
+
+<span class="cm">-- PostgreSQL: use TIMESTAMPTZ (internally 8-byte microseconds since 2000)</span>
+<span class="kw">CREATE TABLE</span> events (
+    id         <span class="ty">BIGSERIAL</span> <span class="kw">PRIMARY KEY</span>,
+    occurred   <span class="ty good-code">TIMESTAMPTZ</span> <span class="kw">NOT NULL</span> <span class="kw">DEFAULT</span> <span class="fn">now</span>()  <span class="cm">-- ✅ 8-byte, safe</span>
+);</code></pre>
+    </div>
+
+    <!-- Fix 5: Enabling 64-bit time on glibc 32-bit -->
+    <h3>Fix 5 — Enable 64-bit time_t on 32-bit glibc</h3>
+    <div class="code-section reveal">
+      <div class="code-header">
+        <div class="file-badge">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span>Makefile / Compiler Flags</span>
+        </div>
+        <span class="lang-badge">Make / Shell</span>
+      </div>
+      <pre><code><span class="cm"># glibc 2.34+ on 32-bit Linux supports 64-bit time_t
+# via _TIME_BITS=64 and _FILE_OFFSET_BITS=64</span>
+
+<span class="cm"># ── Makefile ──────────────────────────────────────────────────</span>
+CFLAGS += <span class="good-code">-D_TIME_BITS=64</span>           <span class="cm"># Force 64-bit time_t on 32-bit glibc</span>
+CFLAGS += <span class="good-code">-D_FILE_OFFSET_BITS=64</span>    <span class="cm"># 64-bit off_t for large file support</span>
+CFLAGS += -Wall -Wextra
+CFLAGS += <span class="good-code">-Werror=overflow</span>          <span class="cm"># Treat integer overflow as error</span>
+
+<span class="cm"># Check at build time what size time_t is:</span>
+check-time-size:
+    @echo <span class="st">"sizeof(time_t) = $(shell echo 'int main(){printf("%zu",sizeof(time_t));}' \
+        | $(CC) -x c - $(CFLAGS) -o /tmp/sztest 2>/dev/null && /tmp/sztest)"</span>
+
+<span class="cm"># ── CMake ─────────────────────────────────────────────────────</span>
+<span class="kw">if</span>(UNIX AND NOT APPLE)
+    target_compile_definitions(myapp PRIVATE
+        <span class="good-code">_TIME_BITS=64</span>
+        <span class="good-code">_FILE_OFFSET_BITS=64</span>
+    )
+<span class="kw">endif</span>()
+
+<span class="cm"># ── Verify at runtime ─────────────────────────────────────────</span>
+<span class="cm">#!/bin/bash</span>
+python3 -c <span class="st">"import struct, time; \
+    t = int(time.time()); \
+    b = struct.pack('i', t); \
+    print(f'32-bit safe: {t < 2**31 - 1}') \
+    if True else print('OVERFLOW RISK')"</span></code></pre>
+    </div>
+  </section>
+
+  <!-- ── SECTION 5: DEPLOYMENT ── -->
+  <section id="deployment">
+    <div class="section-label">07 — Deployment Strategy</div>
+    <h2>How to Deploy<br>the Solution</h2>
+
+    <p>
+      Fixing Y2K38 isn't just about patching source code. It requires a <strong>layered strategy</strong> from hardware RTC all the way up to application databases. Here is a structured deployment pipeline.
+    </p>
+
+    <!-- Deployment pipeline -->
+    <div class="diagram-wrap reveal">
+      <div class="diagram-title">🚀 Y2K38 Remediation Deployment Pipeline</div>
+      <div style="display:flex; flex-direction:column; gap:0.5rem; min-width:480px;">
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <div class="pipe-block dark" style="flex:0 0 auto; min-width:90px;">Phase 1</div>
+          <div class="pipe-block cream" style="flex:1;">Audit — Inventory all systems, identify 32-bit time_t usage, check filesystem types, survey embedded firmware versions</div>
+        </div>
+        <div style="padding-left:1rem; color:var(--orange); font-size:1.2rem; line-height:1.5;">↓</div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <div class="pipe-block dark" style="flex:0 0 auto; min-width:90px;">Phase 2</div>
+          <div class="pipe-block amber" style="flex:1;">Compile Fix — Rebuild with -D_TIME_BITS=64, replace int casts with time_t, update struct members. Run static analysis (cppcheck, clang-tidy).</div>
+        </div>
+        <div style="padding-left:1rem; color:var(--orange); font-size:1.2rem; line-height:1.5;">↓</div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <div class="pipe-block dark" style="flex:0 0 auto; min-width:90px;">Phase 3</div>
+          <div class="pipe-block orange" style="flex:1;">Kernel + OS Upgrade — Update to Linux ≥ 5.6 on 32-bit systems. Verify y2038-ready syscalls (clock_gettime64, etc.) are available.</div>
+        </div>
+        <div style="padding-left:1rem; color:var(--orange); font-size:1.2rem; line-height:1.5;">↓</div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <div class="pipe-block dark" style="flex:0 0 auto; min-width:90px;">Phase 4</div>
+          <div class="pipe-block teal" style="flex:1;">Database Migration — Convert TIMESTAMP → DATETIME/BIGINT. Validate all existing rows. Update ORM models, API serializers, and JSON response types.</div>
+        </div>
+        <div style="padding-left:1rem; color:var(--orange); font-size:1.2rem; line-height:1.5;">↓</div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <div class="pipe-block dark" style="flex:0 0 auto; min-width:90px;">Phase 5</div>
+          <div class="pipe-block cream" style="flex:1;">Embedded Firmware — Flash updated firmware with 64-bit epoch lib. Update hardware RTC drivers. Store era counter in non-volatile memory.</div>
+        </div>
+        <div style="padding-left:1rem; color:var(--orange); font-size:1.2rem; line-height:1.5;">↓</div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <div class="pipe-block dark" style="flex:0 0 auto; min-width:90px;">Phase 6</div>
+          <div class="pipe-block amber" style="flex:1;">Test — Set system clock to 2038-01-19 03:13:00 UTC and simulate overflow. Check all time-dependent code paths. Use faketime on Linux for CI testing.</div>
+        </div>
+        <div style="padding-left:1rem; color:var(--orange); font-size:1.2rem; line-height:1.5;">↓</div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <div class="pipe-block dark" style="flex:0 0 auto; min-width:90px;">Phase 7</div>
+          <div class="pipe-block teal" style="flex:1; ">Monitor &amp; Document — Add runtime assertions for sizeof(time_t). Log epoch overflows. Add compliance check to CI pipeline. Document all patched components.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Challenges -->
+    <h3>Deployment Challenges</h3>
+    <div class="card-grid reveal">
+      <div class="card">
+        <span class="card-icon">🏭</span>
+        <h4>End-of-Life Hardware</h4>
+        <p>Millions of embedded devices (industrial PLCs, medical instruments, smart meters) have 32-bit-only MCUs with no software update path. Physical replacement is the only option.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">⚠️</span>
+        <h4>ABI Breakage</h4>
+        <p>Changing <code>sizeof(time_t)</code> from 4→8 bytes breaks binary interfaces. Shared libraries, serialized data formats, and inter-process RPC structs all need rebuilding.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🗄️</span>
+        <h4>Legacy Databases</h4>
+        <p>Migrating TIMESTAMP → DATETIME on tables with billions of rows requires careful zero-downtime migration strategies. Shadow tables and dual-write patterns are essential.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🔗</span>
+        <h4>Third-Party Dependencies</h4>
+        <p>Vendor libraries, proprietary SDKs, and closed-source middleware may embed 32-bit time internally. You cannot fix what you cannot read.</p>
+      </div>
+    </div>
+
+    <!-- Checklist -->
+    <h3>Remediation Checklist</h3>
+    <ul class="checklist reveal">
+      <li>Verify <code>sizeof(time_t) == 8</code> on all build targets; add <code>_Static_assert</code> to critical modules</li>
+      <li>Audit codebase with <code>grep -rn "(int)time\|int.*time(NULL)\|long.*time(NULL)"</code> — fix every match</li>
+      <li>Replace all <code>int</code>, <code>long</code>, <code>uint32_t</code> timestamp storage with <code>time_t</code> or <code>int64_t</code></li>
+      <li>Rebuild 32-bit Linux targets with glibc ≥ 2.34 and <code>-D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64</code></li>
+      <li>Upgrade kernel to Linux ≥ 5.6 on all 32-bit ARM/MIPS/x86 production systems</li>
+      <li>Migrate MySQL TIMESTAMP columns to DATETIME(3) or BIGINT; update PostgreSQL to use TIMESTAMPTZ</li>
+      <li>Add CI test: <code>faketime '2038-01-19 03:14:06' ./run_tests</code> — all tests must pass through overflow</li>
+      <li>Update embedded RTC drivers to use era counter + 64-bit epoch reconstruction</li>
+      <li>Renew TLS certificates so none expire after 2049 (use YYYYMMDDHHMMSSZ ASN.1 GeneralizedTime format)</li>
+      <li>Update NTP daemon to chrony or ntpd ≥ 4.3 which handles Era 1 (post-2036) correctly</li>
+      <li>Document all patched components in a compliance register with patch date and test results</li>
+    </ul>
+
+    <div class="callout warn">
+      <span class="callout-icon">⏰</span>
+      <div class="callout-body">
+        <strong>Time Remaining</strong>
+        <p>The overflow hits at 03:14:08 UTC on January 19, 2038. That is fewer than 15 years from today. Legacy system upgrade cycles average 7–10 years in industrial and medical sectors. The window for safe, unhurried remediation is closing rapidly.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 8: SUMMARY ── -->
+  <section id="summary" style="margin-top:5rem;">
+    <div class="section-label">08 — Summary</div>
+    <h2>The Bottom Line</h2>
+    <p>
+      The Year 2038 Problem is not hypothetical. It is a deterministic, scheduled event — a predictable consequence of a technical decision made half a century ago. Unlike natural disasters, we know exactly when it will happen, how it will happen, and what the fix is.
+    </p>
+    <p>
+      The blast radius spans every layer of the modern technology stack. <strong>Hardware</strong>: RTC chips like the DS1307 and billions of 32-bit MCUs in medical devices, smart meters, and industrial PLCs will overflow with no update path. <strong>Libraries</strong>: glibc, musl, newlib, and language runtimes all carry the bug on 32-bit targets — even a safe 64-bit value is destroyed the moment you cast it to <code>int</code>. <strong>Games</strong>: Save files, leaderboards, DRM tokens, and Valve's own <code>RTime32</code> type in the Steamworks SDK are all ticking time bombs. <strong>Windows</strong>: Fixed early by Microsoft in 2005 — but MSVC 6 binaries still circulate, <code>_USE_32BIT_TIME_T</code> can silently revert you, and DLL ABI mismatches remain a real risk.
+    </p>
+    <p>
+      The solution is technically simple: <strong>use 64-bit integers for time everywhere</strong>. But operationally, it is a multi-year project touching every layer — compilers, kernels, filesystems, databases, firmware, game save formats, and certificates. The organisations and developers that will suffer most are those that wait until 2036 to begin.
+    </p>
+
+    <div class="pull-quote">
+      <p>Y2K was fixed because everyone panicked. Y2K38 will be fixed too — the question is whether you fix it on your schedule, or on January 19, 2038 at 03:14:08 UTC.</p>
+    </div>
+
+    <div class="stat-strip" style="margin-top:2rem;">
+      <div class="stat-cell"><span class="num">~8B</span><span class="label-s">IoT devices with 32-bit MCUs</span></div>
+      <div class="stat-cell"><span class="num">millions</span><span class="label-s">old game binaries never to be recompiled</span></div>
+      <div class="stat-cell"><span class="num">RTime32</span><span class="label-s">Valve's known 32-bit type in Steamworks SDK</span></div>
+      <div class="stat-cell"><span class="num">&lt;12 yrs</span><span class="label-s">time left for unhurried remediation</span></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-logo">Y2K38 — THE 2038 PROBLEM</span>
+  <p style="color:#e5bd45; font-family:'JetBrains Mono'; font-size:0.656rem">This blog is an educational resource. All code examples are provided for illustrative purposes.</p>
+  <p style="margin-top:1rem; color:rgba(255,154,74,0.5); font-family:'JetBrains Mono',monospace; font-size:0.7rem; letter-spacing:0.1em;">UNIX EPOCH OVERFLOW · 2038-01-19T03:14:08Z</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
